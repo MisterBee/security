@@ -4,19 +4,85 @@
  */
 package Server;
 
+import java.net.ServerSocket; 
+import java.net.Socket;
+import java.util.ArrayList;
 /**
  *
  * @author bdavies
  */
-public class MainWindow extends javax.swing.JFrame {
 
-    /**
-     * Creates new form MainWindow
-     */
-    public MainWindow() {
-        initComponents();
+public class MainWindowServer extends javax.swing.JFrame implements Runnable
+{
+    Thread t;
+    
+    ServerSocket welcomeSocket = null;
+    Socket connectionSocket = null;
+    
+    
+    public class User
+    {
+        String name;
+        String ip;
+        int portNo;
+        User(String userName, String userIp, int userPortNo)
+        {
+            name = userName;
+            ip = userIp;
+            portNo = userPortNo;
+        }
     }
-
+    
+    ArrayList<User> usersLoggedOn = new ArrayList();
+    
+    /**
+     * Creates new form MainWindowServer
+     */
+    public MainWindowServer() 
+    {
+        initComponents();
+        
+        t = new Thread(this);
+        t.start();
+    }
+    
+    //this is an infinite loop that tries to get connections - probably need to make this another thread
+    @Override
+    public void run()
+    {
+        try
+        {
+            //create the welcome socket
+            welcomeSocket = new ServerSocket(6889);
+            
+            boolean inloop = false;
+            
+            while (true)
+            {
+                if(!inloop)
+                {
+                    jTextArea1.append("Welcome to the server!");
+                    inloop = true;
+                }
+                
+                try
+                {
+                   connectionSocket = welcomeSocket.accept();
+                   jTextArea1.append("User Logging in");
+                   ServerThread st =  new ServerThread(connectionSocket, this);
+                }
+                catch(Exception e)
+                {
+                    jTextArea1.append("User Failed Logging in");
+                }
+            }
+         }
+         catch(Exception e)
+         {
+             jTextArea1.append("Server setup failed " + e.getMessage());
+         }
+         
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -35,12 +101,11 @@ public class MainWindow extends javax.swing.JFrame {
 
         jTextArea1.setColumns(20);
         jTextArea1.setRows(5);
-        jTextArea1.setText("Input and Output");
         jScrollPane1.setViewportView(jTextArea1);
 
         jTextArea2.setColumns(20);
         jTextArea2.setRows(5);
-        jTextArea2.setText("Actionsdde");
+        jTextArea2.setText("\n");
         jScrollPane2.setViewportView(jTextArea2);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -84,13 +149,13 @@ public class MainWindow extends javax.swing.JFrame {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(MainWindow.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MainWindowServer.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(MainWindow.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MainWindowServer.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(MainWindow.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MainWindowServer.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(MainWindow.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MainWindowServer.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
 
@@ -100,7 +165,7 @@ public class MainWindow extends javax.swing.JFrame {
         java.awt.EventQueue.invokeLater(new Runnable() {
 
             public void run() {
-                new MainWindow().setVisible(true);
+                new MainWindowServer().setVisible(true);
             }
         });
     }
