@@ -5,12 +5,27 @@
  */
 package Client;
 
+import java.awt.event.KeyEvent;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+
 /**
  *
  * @author rmazzolini
  */
-public class MainWindow extends javax.swing.JFrame {
-
+public class MainWindow extends javax.swing.JFrame implements Runnable
+{
+    Thread t;
+    
+    Socket connectionSocket = null;
+    ServerSocket welcomeSocket = null;
+    Socket clientSocket = null;
+    PrintWriter outToServer;
+    
+    String userName = "Alice";
+    String serverIp = "localhost";
+    int port = 6889;
     /**
      * Creates new form MainWindow
      */
@@ -18,7 +33,102 @@ public class MainWindow extends javax.swing.JFrame {
     {
         initComponents();
     }
-
+    //this is an infinite loop that tries to get connections - probably need to make this another thread
+    @Override
+    public void run()
+    {
+        try
+        {
+            //create the welcome socket
+            welcomeSocket = new ServerSocket(0);
+            
+            boolean inloop = false;
+            
+            while (true)
+            {
+                if(!inloop)
+                {
+                    //consoleMessage("Welcome to the server!\n");
+                    inloop = true;
+                }
+                
+                try
+                {
+                   clientSocket = welcomeSocket.accept();
+                   //jTextArea1.append("User Logging in\n");
+                   RecieveThread st =  new RecieveThread(clientSocket, this);
+                }
+                catch(Exception e)
+                {
+                    consoleMessage("User Failed Logging in");
+                }
+            }
+         }
+         catch(Exception e)
+         {
+             consoleMessage("Server setup failed " + e.getMessage());
+         }
+         
+    }
+    
+    public void login()
+    {
+        
+        try
+        {
+            clientSocket = new Socket(serverIp, port);
+            RecieveThread st =  new RecieveThread(clientSocket, this);
+            
+            try
+            {
+                outToServer = new PrintWriter(clientSocket.getOutputStream(), true);
+                //System.out.println("Alice");
+                //System.out.println(clientSocket.getLocalAddress().getHostName());
+                
+                String generateMasterKey = generateMasterKey();
+                
+                //System.out.println(ssThread.welcomeSocket.getLocalPort() + " /");
+                outToServer.println("/UserName " + userName + " " +clientSocket.getLocalAddress().getHostAddress() +" "+ welcomeSocket.getLocalPort() + " " + generateMasterKey);
+                //outToServer.println("/UserName " + "Alice" + " " +clientSocket.getLocalAddress().getHostAddress() +" "+ ssThread.welcomeSocket.getLocalPort());
+    //            sleeper.t.start();
+    //            outToServer.println("/UserName " + userName + " " +clientSocket.getLocalAddress().getHostAddress() +" "+ ssThread.welcomeSocket.getLocalPort());
+    //            outToServer.println(loginString);
+                
+                t = new Thread(this);
+                t.start();
+            }
+            catch(Exception e)
+            {
+                consoleMessage("Output failed " + e.getMessage());
+            }
+            
+        }
+        catch(Exception e)
+        {
+            consoleMessage("Failed to connect to server");
+        }
+        
+    }
+    public String generateMasterKey()
+    {
+        return "password";
+    }
+    public void consoleMessage(String input)
+    {
+        jTextArea1.append( input + "\n");
+    }
+    public void serverMessage(String text)
+    {
+        if(outToServer!=null)
+        {
+            outToServer.println(text);
+        }
+        else
+        {
+            consoleMessage("Not connected to server");
+        }
+    }
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -28,12 +138,14 @@ public class MainWindow extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jPopupMenu1 = new javax.swing.JPopupMenu();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTextArea1 = new javax.swing.JTextArea();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTextArea2 = new javax.swing.JTextArea();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
+        jMenuItem1 = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -55,14 +167,23 @@ public class MainWindow extends javax.swing.JFrame {
             }
         });
         jTextArea2.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent evt) {
-                Enter(evt);
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                Entered(evt);
             }
         });
         jScrollPane2.setViewportView(jTextArea2);
         jTextArea2.getAccessibleContext().setAccessibleName("Input");
 
         jMenu1.setText("File");
+
+        jMenuItem1.setText("Log into Server");
+        jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem1ActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItem1);
+
         jMenuBar1.add(jMenu1);
 
         jMenu2.setText("Edit");
@@ -92,21 +213,31 @@ public class MainWindow extends javax.swing.JFrame {
         // TODO add your handling code here:
         jTextArea2.setText("");
     }//GEN-LAST:event_DropText
-
-    private void Enter(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_Enter
+    
+    private void Entered(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_Entered
         // TODO add your handling code here:
-        int key = evt.getKeyCode();
-
-        if (key == java.awt.event.KeyEvent.VK_ENTER) {
-        String temp = "Alice : " + jTextArea2.getText();
-        jTextArea2.setText("");
-        jTextArea1.append(temp + "\n");
-        jTextArea2.setCaretPosition(-1);
-        
+        int keyCode = evt.getKeyCode();
+        if(keyCode==KeyEvent.VK_ENTER)
+        {
+            String input = jTextArea2.getText().trim();
+            jTextArea1.append(userName+": " + input + "\n");
+            try
+            {
+                serverMessage(input);
+            }
+            catch(Exception e)
+            {
+                jTextArea1.append("Couldn't connect to server message not sent.\n");
+            }
+            jTextArea2.setText("");
         }
-  
-            
-    }//GEN-LAST:event_Enter
+    }//GEN-LAST:event_Entered
+
+    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
+        // TODO add your handling code here:
+        Login s = new Login(this);
+        
+    }//GEN-LAST:event_jMenuItem1ActionPerformed
 
     
     
@@ -155,6 +286,8 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuBar jMenuBar1;
+    private javax.swing.JMenuItem jMenuItem1;
+    private javax.swing.JPopupMenu jPopupMenu1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTextArea jTextArea1;

@@ -15,7 +15,7 @@ import java.util.StringTokenizer;
 public class ServerThread implements Runnable
 {
     Thread t;
-    
+    String uname = "";
     Socket connectionSocket = null;
     BufferedReader inFromClient = null;
     PrintWriter outToClient = null;
@@ -51,13 +51,15 @@ public class ServerThread implements Runnable
                     clientSentence = inFromClient.readLine();
                     st = new StringTokenizer(clientSentence);
                     String command = st.nextToken();
+                    //mainWindow.consoleMessage(command);
                     if(command.equals("/UserName"))
                     {
-                        String uname = st.nextToken();
+                        uname = st.nextToken();
                         String ip = st.nextToken();
                         int port = Integer.parseInt(st.nextToken());
-                        
-                        mainWindow.usersLoggedOn.add(mainWindow.new User(uname,ip,port));
+                        String masterKey = st.nextToken();
+                        mainWindow.consoleMessage("Welcome "+uname +" at " +ip+" with open port "+ port+" shhhh... "+ masterKey+" :)");
+                        mainWindow.usersLoggedOn.add(mainWindow.new User(uname,ip,port, masterKey));
                     }
                     else if (command.equals("/Logout"))
                     {
@@ -65,7 +67,15 @@ public class ServerThread implements Runnable
                     }
                     else
                     {
-                        System.out.println("Received: " + clientSentence);
+                        if(uname.equals(""))
+                        {
+                            mainWindow.consoleMessage("Received: " + clientSentence);
+                        }
+                        else
+                        {
+                            mainWindow.consoleMessage(uname+": " + clientSentence);
+                        }
+                        //System.out.println("Received: " + clientSentence);
                         capitalizedSentence = clientSentence.toUpperCase() + '\n';
                         outToClient.println(capitalizedSentence);
                     }

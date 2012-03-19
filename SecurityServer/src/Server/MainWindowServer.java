@@ -25,11 +25,13 @@ public class MainWindowServer extends javax.swing.JFrame implements Runnable
         String name;
         String ip;
         int portNo;
-        User(String userName, String userIp, int userPortNo)
+        String key;
+        User(String userName, String userIp, int userPortNo,String masterKey)
         {
             name = userName;
             ip = userIp;
             portNo = userPortNo;
+            key = masterKey;
         }
     }
     
@@ -45,7 +47,10 @@ public class MainWindowServer extends javax.swing.JFrame implements Runnable
         t = new Thread(this);
         t.start();
     }
-    
+    public void consoleMessage(String input)
+    {
+        jTextArea1.append( input + "\n");
+    }
     //this is an infinite loop that tries to get connections - probably need to make this another thread
     @Override
     public void run()
@@ -61,14 +66,14 @@ public class MainWindowServer extends javax.swing.JFrame implements Runnable
             {
                 if(!inloop)
                 {
-                    jTextArea1.append("Welcome to the server!");
+                    jTextArea1.append("Welcome to the server!\n");
                     inloop = true;
                 }
                 
                 try
                 {
                    connectionSocket = welcomeSocket.accept();
-                   jTextArea1.append("User Logging in");
+                   jTextArea1.append("User Logging in\n");
                    ServerThread st =  new ServerThread(connectionSocket, this);
                 }
                 catch(Exception e)
