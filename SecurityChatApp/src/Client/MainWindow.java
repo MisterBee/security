@@ -12,6 +12,9 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.StringTokenizer;
 import javax.swing.*;
+import java.security.*;
+import javax.crypto.*;
+import javax.xml.bind.DatatypeConverter;
 
 /**
  *
@@ -29,6 +32,8 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
     String userName = "Alice";
     String serverIp = "localhost";
     int port = 6889;
+    Key masterKey;
+    KeyPair keyPair;
     
     public class Friend
     {
@@ -134,10 +139,19 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
                 //System.out.println("Alice");
                 //System.out.println(clientSocket.getLocalAddress().getHostName());
 
-                String generatedSharedKey = generateSharedKey();
-                String generatedKeyPair = generateKeyPair();
+                masterKey = generateMasterKey();
+                System.out.println("master uses " +masterKey.getAlgorithm());
+                byte[] KMarr = masterKey.getEncoded();
+                String KMstr = DatatypeConverter.printBase64Binary(KMarr);
+                
+                keyPair = generateKeyPair();
+                PublicKey KU = keyPair.getPublic();
+                System.out.println("public uses " +KU.getAlgorithm());
+                byte[] KUarr = KU.getEncoded();
+                String KUstr = DatatypeConverter.printBase64Binary(KUarr);
+                
                 //System.out.println(ssThread.welcomeSocket.getLocalPort() + " /");
-                outToServer.println("/UserName " + userName + " " +clientSocket.getLocalAddress().getHostAddress() +" "+ welcomeSocket.getLocalPort() + " " + generatedSharedKey +" "+generatedKeyPair);
+                outToServer.println("/UserName " + userName + " " +clientSocket.getLocalAddress().getHostAddress() +" "+ welcomeSocket.getLocalPort() + " " + KMstr +" "+KUstr);
                 //outToServer.println("/UserName " + "Alice" + " " +clientSocket.getLocalAddress().getHostAddress() +" "+ ssThread.welcomeSocket.getLocalPort());
     //            sleeper.t.start();
     //            outToServer.println("/UserName " + userName + " " +clientSocket.getLocalAddress().getHostAddress() +" "+ ssThread.welcomeSocket.getLocalPort());
@@ -158,13 +172,23 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
         }
         
     }
-    public String generateSharedKey()
+    public Key generateMasterKey() throws Exception
     {
-        return "password";
+        System.out.println("\nStart generating AES key");
+        KeyGenerator keyG = KeyGenerator.getInstance("AES");
+        keyG.init(192);
+        Key key = keyG.generateKey();
+        System.out.println("Finish Generating key");
+        return key;
     }
-    public String generateKeyPair()
+    public KeyPair generateKeyPair() throws Exception
     {
-        return "password";
+        System.out.println("\nStart generating RSA key");
+        KeyPairGenerator keyG = KeyPairGenerator.getInstance("RSA");
+        keyG.initialize(1024);
+        KeyPair keys = keyG.generateKeyPair();
+        System.out.println("Finish generating RSA key");
+        return keys;
     }
     public void consoleMessage(String input)
     {
@@ -423,7 +447,7 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
         String name = "";
         String ipAddress = "";
         int portNumber = 0;
-        String sharedKey = "";
+        //String sharedKey = "";
         String publicKey = "";
         
         DefaultListModel listModel;
@@ -436,12 +460,12 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
             name = st.nextToken();
             ipAddress = st.nextToken();
             portNumber = Integer.parseInt(st.nextToken());
-            sharedKey = st.nextToken();
+            //sharedKey = st.nextToken();
             publicKey = st.nextToken();
-            consoleMessage(name+" "+ipAddress+" "+portNumber+" "+sharedKey+" "+publicKey);
+            consoleMessage(name+" "+ipAddress+" "+portNumber+" "+publicKey);
             
             
-            test = new Friend(name, ipAddress, portNumber,sharedKey,publicKey , this);
+            test = new Friend(name, ipAddress, portNumber,null,publicKey , this);
             
             friendsLoggedOn.add(test);
             listModel.addElement(name);

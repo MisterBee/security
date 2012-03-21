@@ -7,6 +7,9 @@ package Server;
 import java.net.ServerSocket; 
 import java.net.Socket;
 import java.util.ArrayList;
+import java.security.*;
+import javax.crypto.*;
+import javax.xml.bind.DatatypeConverter;
 /**
  *
  * @author bdavies
@@ -25,9 +28,9 @@ public class MainWindowServer extends javax.swing.JFrame implements Runnable
         String userName;
         String ip;
         int portNo;
-        String sharedKey;
-        String publicKey;
-        User(String userName, String userIp, int userPortNo, String sharedKey, String publicKey)
+        Key sharedKey;
+        PublicKey publicKey;
+        User(String userName, String userIp, int userPortNo, Key sharedKey, PublicKey publicKey)
         {
             this.userName = userName;
             ip = userIp;

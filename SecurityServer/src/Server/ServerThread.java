@@ -7,6 +7,11 @@ package Server;
 import java.io.*;
 import java.net.*;
 import java.util.StringTokenizer;
+import java.security.*;
+import java.security.spec.X509EncodedKeySpec;
+import javax.crypto.*;
+import javax.crypto.spec.SecretKeySpec;
+import javax.xml.bind.DatatypeConverter;
 
 /**
  *
@@ -57,10 +62,18 @@ public class ServerThread implements Runnable
                         uname = st.nextToken();
                         String ip = st.nextToken();
                         int port = Integer.parseInt(st.nextToken());
-                        String sharedKey = st.nextToken();
-                        String publicKey = st.nextToken();
-                        mainWindow.consoleMessage("Welcome "+uname +" at " +ip+" with open port "+ port+" shhhh... "+ sharedKey+" - "+publicKey+" :)");
-                        mainWindow.usersLoggedOn.add(mainWindow.new User(uname,ip,port, sharedKey, publicKey));
+                        String KMstr = st.nextToken();
+                        String KUstr = st.nextToken();
+                        byte[] KMarr = DatatypeConverter.parseBase64Binary(KMstr);
+                        SecretKey masterKey = new SecretKeySpec(KMarr, "AES");
+                        
+                        byte[] KUarr = DatatypeConverter.parseBase64Binary(KUstr);
+//                      X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(KUarr);
+                        PublicKey KU = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(KUarr));
+
+
+                        mainWindow.consoleMessage("Welcome "+uname +" at " +ip+" with open port "+ port+" shhhh... "+ masterKey+" - "+KU+" :)");
+                        mainWindow.usersLoggedOn.add(mainWindow.new User(uname,ip,port, masterKey, KU));
                         
                         
                         outToClient.println("/Message " + "Server " + "Thanks for logging in "+uname +"!");
@@ -69,7 +82,7 @@ public class ServerThread implements Runnable
                         for(MainWindowServer.User friend : mainWindow.usersLoggedOn)
                         {
                             if(!friend.userName.equals(uname))
-                                temp = temp + " " + friend.userName + " " + friend.ip + " " + friend.portNo +" "+ friend.publicKey+" "+ friend.sharedKey;
+                                temp = temp + " " + friend.userName + " " + friend.ip + " " + friend.portNo +" "+ friend.publicKey;
                         }
                                 
                         outToClient.println("/FriendsList" + temp);
@@ -82,7 +95,7 @@ public class ServerThread implements Runnable
                         for(MainWindowServer.User friend : mainWindow.usersLoggedOn)
                         {
                             if(!friend.userName.equals(userName))
-                            temp = temp + " " + friend.userName + " " + friend.ip + " " + friend.portNo +" "+ friend.publicKey+" "+ friend.sharedKey;
+                            temp = temp + " " + friend.userName + " " + friend.ip + " " + friend.portNo +" "+ friend.publicKey;
                         }
                                 
                         outToClient.println("/FriendsList" + temp);
