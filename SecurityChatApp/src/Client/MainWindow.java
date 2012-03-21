@@ -574,16 +574,26 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
     
     public String encrypt(String toEncrypt) throws Exception
     {
-        byte[] plainText = DatatypeConverter.parseBase64Binary(toEncrypt);
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        byte[] iv = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-        IvParameterSpec ivspec = new IvParameterSpec(iv);
-        cipher.init(Cipher.ENCRYPT_MODE, masterKey, ivspec);
+        byte[] plainText = toEncrypt.getBytes(); 
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.ENCRYPT_MODE, masterKey);
         byte[] cipherText = cipher.doFinal(plainText);
         String s = DatatypeConverter.printBase64Binary(cipherText);
         
         return s;
     }
+    public String decrypt(String toDecrypt)throws Exception
+    {
+        byte[] plainText = DatatypeConverter.parseBase64Binary(toDecrypt);
+        Cipher cipher = Cipher.getInstance("AES");//CBC/PKCS5Padding");
+//        byte[] iv = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+//        IvParameterSpec ivspec = new IvParameterSpec(iv);
+        cipher.init(Cipher.DECRYPT_MODE, masterKey);//, ivspec);
+        byte[] cipherText = cipher.doFinal(plainText);
+        String s = new String(cipherText);
+        return s;
+    }
+    
     public String encrypt(String toEncrypt, PrivateKey KRA) throws Exception
     {
         byte[] plainText = DatatypeConverter.parseBase64Binary(toEncrypt);
@@ -621,6 +631,8 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
                             nonce = generateNonce();
                             String temp = friend.userName + " " + nonce;
                             String encrypted = encrypt(temp);
+                            String decrypted = decrypt(encrypted);
+                            consoleMessage("decrypted now is " + decrypted);
                             
                             consoleMessage("Not encrypted yet " + temp);
                             byte[] cipherTemp = masterKey.getEncoded();

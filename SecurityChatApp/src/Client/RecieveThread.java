@@ -76,15 +76,15 @@ public class RecieveThread implements Runnable
                         String phase2Encrypted = modifiedSentence.substring(8);
                         byte[] cipherText = DatatypeConverter.parseBase64Binary(phase2Encrypted);
                         
-                        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+                        Cipher cipher = Cipher.getInstance("AES");
                         
-                        byte[] iv = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-                        IvParameterSpec ivspec = new IvParameterSpec(iv);
-                        cipher.init(Cipher.DECRYPT_MODE, parentRef.masterKey, ivspec);
+//                        byte[] iv = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+//                        IvParameterSpec ivspec = new IvParameterSpec(iv);
+                        cipher.init(Cipher.DECRYPT_MODE, parentRef.masterKey);//, ivspec);
                         
                         byte[] decryptedText = cipher.doFinal(cipherText);
                         
-                        String text = DatatypeConverter.printBase64Binary(decryptedText);
+                        String text = new String(decryptedText);
                         parentRef.consoleMessage("Successfully decrypted text: "+ text);
                         
                         StringTokenizer strT = new StringTokenizer(text);
@@ -99,7 +99,7 @@ public class RecieveThread implements Runnable
                         
                             String bCipherText = text.substring(nonce.length()+ sharedKeyString.length()+friendName.length() + 3);
                             
-                            byte[] KAB = DatatypeConverter.parseBase64Binary(sharedKeyString);
+                            byte[] KAB = sharedKeyString.getBytes();
                             SecretKeySpec sharedKey = new SecretKeySpec(KAB, "AES");
                             MainWindow.Friend b = null;
                             for (MainWindow.Friend temp : parentRef.friendsLoggedOn) 
@@ -129,6 +129,13 @@ public class RecieveThread implements Runnable
                             parentRef.consoleMessage("Nonce incorrect, suspicious activity detected.");
                         
                         }
+                        
+                    }
+                    else if(test.equals("/Phase3"))
+                    {
+                        parentRef.consoleMessage("Recieved phase3 from A");
+                        
+                        String phase3Encrypted = modifiedSentence.substring(8);
                         
                     }
                     else if(test.equals("/Message"))

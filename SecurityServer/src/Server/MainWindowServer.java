@@ -56,7 +56,7 @@ public class MainWindowServer extends javax.swing.JFrame implements Runnable
     public String encrypt(String toEncrypt, Key key) throws Exception
     {
         byte[] plainText = toEncrypt.getBytes();
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        Cipher cipher = Cipher.getInstance("AES");
         cipher.init(Cipher.ENCRYPT_MODE, key);
         byte[] cipherText = cipher.doFinal(plainText);
         String s = DatatypeConverter.printBase64Binary(cipherText);

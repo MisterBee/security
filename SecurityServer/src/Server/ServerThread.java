@@ -106,7 +106,7 @@ public class ServerThread implements Runnable
                         //mainWindow.consoleMessage("encrypted "+ encrypted);
                         byte[] cipherText = DatatypeConverter.parseBase64Binary(encrypted);
                         
-                        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+                        Cipher cipher = Cipher.getInstance("AES");//CBC/PKCS5Padding");
                         Key aKey = null;
                         
                         for(MainWindowServer.User friend : mainWindow.usersLoggedOn)
@@ -120,16 +120,16 @@ public class ServerThread implements Runnable
                         byte[] cipherTemp = aKey.getEncoded();
                         String s = DatatypeConverter.printBase64Binary(cipherTemp);
                         
-                        byte[] iv = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-                        IvParameterSpec ivspec = new IvParameterSpec(iv);
-                        cipher.init(Cipher.DECRYPT_MODE, aKey, ivspec);
+//                        byte[] iv = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+//                        IvParameterSpec ivspec = new IvParameterSpec(iv);
+                        cipher.init(Cipher.DECRYPT_MODE, aKey);//, ivspec);
                         
                         
                         byte[] decryptedText = cipher.doFinal(cipherText);
                         
                         mainWindow.consoleMessage("Phase2 encrypted " + s);
                         
-                        String text = DatatypeConverter.printBase64Binary(decryptedText);
+                        String text = new String(decryptedText);
                         
                         StringTokenizer strT = new StringTokenizer(text);
                         
@@ -138,7 +138,7 @@ public class ServerThread implements Runnable
                         String friendName = strT.nextToken();
                         mainWindow.consoleMessage("Phase2 friendName " + friendName);
                         
-                        String nonce = text.substring(friendName.length()+1);
+                        String nonce = text.substring(friendName.length());
                         
                         MainWindowServer.User b = null;
                         
@@ -153,7 +153,7 @@ public class ServerThread implements Runnable
                         Key sharedKey = mainWindow.generateSharedKey();
                         
                         byte[] KsharedArr = sharedKey.getEncoded();
-                        String sharedKeyString = DatatypeConverter.printBase64Binary(KsharedArr);
+                        String sharedKeyString = new String(KsharedArr);
                         
                         String bEncrypt = uname + " " + sharedKeyString;
                         String bEncrypted = mainWindow.encrypt(bEncrypt, b.sharedKey);
