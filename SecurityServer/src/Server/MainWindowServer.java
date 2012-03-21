@@ -52,6 +52,28 @@ public class MainWindowServer extends javax.swing.JFrame implements Runnable
         t = new Thread(this);
         t.start();
     }
+    
+    public String encrypt(String toEncrypt, Key key) throws Exception
+    {
+        byte[] plainText = toEncrypt.getBytes();
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+        byte[] cipherText = cipher.doFinal(plainText);
+        String s = DatatypeConverter.printBase64Binary(cipherText);
+        
+        return s;
+    }
+    
+    public Key generateSharedKey() throws Exception
+    {
+        System.out.println("\nStart generating AES key");
+        KeyGenerator keyG = KeyGenerator.getInstance("AES");
+        keyG.init(128);
+        Key key = keyG.generateKey();
+        System.out.println("Finish Generating key");
+        return key;
+    }
+    
     public void consoleMessage(String input)
     {
         jTextArea1.append( input + "\n");

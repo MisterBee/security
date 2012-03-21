@@ -13,7 +13,10 @@ import java.util.ArrayList;
 import java.util.StringTokenizer;
 import javax.swing.*;
 import java.security.*;
+import java.security.spec.X509EncodedKeySpec;
 import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
 /**
@@ -31,6 +34,7 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
     
     String userName = "Alice";
     String serverIp = "localhost";
+    String nonce = "";
     int port = 6889;
     Key masterKey;
     KeyPair keyPair;
@@ -40,19 +44,21 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
         String userName;
         String ip;
         int portNo;
-        String sharedKey;
-        String publicKey;
+        Key sharedKey;
+        PublicKey publicKey;
+        public boolean hasSecureConnection;
         public Socket contactSocket;
         public RecieveThread recieve;
         public PrintWriter printWriter;
-        Friend(String userName, String userIp, int userPortNo, String sharedKey, String publicKey, MainWindow parent)
+        
+        Friend(String userName, String userIp, int userPortNo, Key sharedKey, PublicKey publicKey, MainWindow parent)
         {
             this.userName = userName;
             this.ip = userIp;
             this.portNo = userPortNo;
             this.sharedKey = sharedKey;
             this.publicKey = publicKey;
-            
+            this.hasSecureConnection = false;
             
             try
             {
@@ -140,16 +146,16 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
                 //System.out.println(clientSocket.getLocalAddress().getHostName());
 
                 masterKey = generateMasterKey();
-                System.out.println("master uses " +masterKey.getAlgorithm());
+                //System.out.println("master uses " +masterKey.getAlgorithm());
                 byte[] KMarr = masterKey.getEncoded();
                 String KMstr = DatatypeConverter.printBase64Binary(KMarr);
                 
                 keyPair = generateKeyPair();
                 PublicKey KU = keyPair.getPublic();
-                System.out.println("public uses " +KU.getAlgorithm());
+                //System.out.println("public uses " +KU.getAlgorithm());
                 byte[] KUarr = KU.getEncoded();
                 String KUstr = DatatypeConverter.printBase64Binary(KUarr);
-                
+                consoleMessage("Loggin in to server with masterkey " +KMstr+" and public key "+KUstr);
                 //System.out.println(ssThread.welcomeSocket.getLocalPort() + " /");
                 outToServer.println("/UserName " + userName + " " +clientSocket.getLocalAddress().getHostAddress() +" "+ welcomeSocket.getLocalPort() + " " + KMstr +" "+KUstr);
                 //outToServer.println("/UserName " + "Alice" + " " +clientSocket.getLocalAddress().getHostAddress() +" "+ ssThread.welcomeSocket.getLocalPort());
@@ -176,7 +182,7 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
     {
         System.out.println("\nStart generating AES key");
         KeyGenerator keyG = KeyGenerator.getInstance("AES");
-        keyG.init(192);
+        keyG.init(128);
         Key key = keyG.generateKey();
         System.out.println("Finish Generating key");
         return key;
@@ -237,6 +243,7 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
         jLabel2 = new javax.swing.JLabel();
         jCheckBox1 = new javax.swing.JCheckBox();
         jButton1 = new javax.swing.JButton();
+        jButton2 = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
@@ -255,6 +262,8 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
         jTextArea2.setText("Bonk here");
         jTextArea2.setToolTipText("Type here to chat to your paramour");
         jTextArea2.setWrapStyleWord(true);
+        jTextArea2.setEnabled(false);
+        jTextArea2.setOpaque(false);
         jTextArea2.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusGained(java.awt.event.FocusEvent evt) {
                 DropText(evt);
@@ -293,6 +302,14 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
             }
         });
 
+        jButton2.setText("Get Secure Connection");
+        jButton2.setEnabled(false);
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
+
         jMenu1.setText("File");
 
         jMenuItem1.setText("Log into Server");
@@ -316,20 +333,20 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addContainerGap()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel1)
+                            .addComponent(jButton1)
                             .addComponent(jCheckBox1)
-                            .addComponent(jButton1))
-                        .addGap(0, 104, Short.MAX_VALUE)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 348, Short.MAX_VALUE)
+                            .addComponent(jButton2)))
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 270, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jLabel2)
-                        .addContainerGap())
+                        .addContainerGap(202, Short.MAX_VALUE))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING)))
         );
         layout.setVerticalGroup(
@@ -347,9 +364,11 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
                     .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jCheckBox1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 4, Short.MAX_VALUE)
+                        .addComponent(jButton2)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jButton1)
-                        .addGap(0, 26, Short.MAX_VALUE))))
+                        .addContainerGap())))
         );
 
         pack();
@@ -414,20 +433,54 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
 
     private void jList1ValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_jList1ValueChanged
 
-        int minIndex = evt.getFirstIndex();
-        int maxIndex = evt.getLastIndex();
-
+//        int minIndex = evt.getFirstIndex();
+//        int maxIndex = evt.getLastIndex();
+        
         if (evt.getValueIsAdjusting()) {
-//            int i = jList1.getSelectedIndex();
-//            ListModel md = jList1.getModel();
-//            String s = md.getElementAt(i).toString();
-//            for (Friend temp : friendsLoggedOn) {
-//                if (temp.userName.equals(s)) {
-//                    //new ChatWindow(temp.contactName, temp.ipAdress, temp.port, userName, this);
-//                    break;
-//                }
-//            }
-
+            int i = jList1.getSelectedIndex();
+            ListModel md = jList1.getModel();
+            String s = md.getElementAt(i).toString();
+            
+            if(s!=null)
+            {
+                jTextArea2.setEnabled(false);
+                jTextArea2.setEditable(false);
+                jTextArea2.setOpaque(false);
+                jButton2.setEnabled(false);
+                
+                if (s.equals("Server")) 
+                {
+                    jTextArea2.setEnabled(true);
+                    jTextArea2.setEditable(true);
+                    jTextArea2.setOpaque(true);
+                    jButton2.setEnabled(false);
+                    
+                }
+                else
+                {
+                    for (Friend temp : friendsLoggedOn) 
+                    {
+                        if (temp.userName.equals(s)) 
+                        {
+                            if(temp.hasSecureConnection)
+                            {
+                                jTextArea2.setEnabled(true);
+                                jTextArea2.setEditable(true);
+                                jTextArea2.setOpaque(true);
+                                jButton2.setEnabled(false);
+                            }
+                            else
+                            {
+                                jTextArea2.setEnabled(false);
+                                jTextArea2.setEditable(false);
+                                jTextArea2.setOpaque(false);
+                                jButton2.setEnabled(true);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
         }
 //        for (int i = minIndex; i <= maxIndex; i++)
 //        {
@@ -462,13 +515,26 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
             portNumber = Integer.parseInt(st.nextToken());
             //sharedKey = st.nextToken();
             publicKey = st.nextToken();
-            consoleMessage(name+" "+ipAddress+" "+portNumber+" "+publicKey);
+            
+            byte[] KUarr = DatatypeConverter.parseBase64Binary(publicKey);
+//                      X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(KUarr);
+            try
+            {
+                PublicKey KU = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(KUarr));
+                consoleMessage(name+" "+ipAddress+" "+portNumber+" "+KU);
+            
+                test = new Friend(name, ipAddress, portNumber,null, KU , this);
+
+                friendsLoggedOn.add(test);
+                listModel.addElement(name);
+            }
+            catch(Exception e)
+            {
+                consoleMessage("Couldnt get key" +e.getMessage());
+            }
             
             
-            test = new Friend(name, ipAddress, portNumber,null,publicKey , this);
             
-            friendsLoggedOn.add(test);
-            listModel.addElement(name);
             
         }
         jList1.setModel(listModel);// = new JList(listModel);
@@ -492,6 +558,100 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
         
         
     }//GEN-LAST:event_jButton1ActionPerformed
+
+    public String generateNonce() throws Exception
+    {
+        // creates random number generator
+        SecureRandom rand = new SecureRandom();
+        //sets the length of the nonce
+        byte[] nonceArr = new byte[1];
+        //gets a random number
+        rand.nextBytes(nonceArr);
+        //converts to a string in HexaDecimal format
+        String Nonce = DatatypeConverter.printHexBinary(nonceArr);
+        return Nonce;
+    }
+    
+    public String encrypt(String toEncrypt) throws Exception
+    {
+        byte[] plainText = DatatypeConverter.parseBase64Binary(toEncrypt);
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        byte[] iv = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+        IvParameterSpec ivspec = new IvParameterSpec(iv);
+        cipher.init(Cipher.ENCRYPT_MODE, masterKey, ivspec);
+        byte[] cipherText = cipher.doFinal(plainText);
+        String s = DatatypeConverter.printBase64Binary(cipherText);
+        
+        return s;
+    }
+    public String encrypt(String toEncrypt, PrivateKey KRA) throws Exception
+    {
+        byte[] plainText = DatatypeConverter.parseBase64Binary(toEncrypt);
+        Cipher cipher = Cipher.getInstance("RSA");
+        
+//        byte[] iv = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+//        IvParameterSpec ivspec = new IvParameterSpec(iv);
+        
+        cipher.init(Cipher.ENCRYPT_MODE, KRA);
+        
+        
+        byte[] cipherText = cipher.doFinal(plainText);
+        String s = DatatypeConverter.printBase64Binary(cipherText);
+        
+        return s;
+    }
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        // TODO add your handling code here:
+        try
+        {
+            int i = jList1.getSelectedIndex();
+            ListModel md = jList1.getModel();
+
+            String s = md.getElementAt(i).toString();
+            //consoleMessage(s);
+            boolean sent = false;
+            if(s!=null)
+                for (Friend friend : friendsLoggedOn) 
+                {
+                    if (friend.userName.equals(s)) 
+                    {
+                              
+                        if(friend.printWriter!=null)
+                        {
+                            nonce = generateNonce();
+                            String temp = friend.userName + " " + nonce;
+                            String encrypted = encrypt(temp);
+                            
+                            consoleMessage("Not encrypted yet " + temp);
+                            byte[] cipherTemp = masterKey.getEncoded();
+                            
+                            String sE = DatatypeConverter.printBase64Binary(cipherTemp);
+                            consoleMessage("Encrypted with key " + sE);
+                            
+                            outToServer.println("/Phase1 " + encrypted);
+                        }
+                        else
+                        {
+                            consoleMessage("Not connected to friend");
+                        }
+                        //new ChatWindow(temp.contactName, temp.ipAdress, temp.port, userName, this);
+                        sent = true;
+                        break;
+                    }
+                }
+            if(!sent)
+            {
+                consoleMessage("Authentification failed in Phase1");
+            }
+
+        }
+        catch(Exception e)
+        {
+            jTextArea1.append("Couldn't send your message, try selecting someone to talk to. " + e + "/n");
+        }
+        
+        
+    }//GEN-LAST:event_jButton2ActionPerformed
 
     
     
@@ -538,6 +698,7 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;
+    private javax.swing.JButton jButton2;
     private javax.swing.JCheckBox jCheckBox1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
