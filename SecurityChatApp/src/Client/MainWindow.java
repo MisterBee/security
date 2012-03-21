@@ -9,6 +9,9 @@ import java.awt.event.KeyEvent;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.StringTokenizer;
+import javax.swing.*;
 
 /**
  *
@@ -26,12 +29,49 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
     String userName = "Alice";
     String serverIp = "localhost";
     int port = 6889;
+    
+    public class Friend
+    {
+        String userName;
+        String ip;
+        int portNo;
+        String sharedKey;
+        String publicKey;
+        public Socket contactSocket;
+        public RecieveThread recieve;
+        public PrintWriter printWriter;
+        Friend(String userName, String userIp, int userPortNo, String sharedKey, String publicKey, MainWindow parent)
+        {
+            this.userName = userName;
+            this.ip = userIp;
+            this.portNo = userPortNo;
+            this.sharedKey = sharedKey;
+            this.publicKey = publicKey;
+            
+            
+            try
+            {
+                contactSocket = new Socket(this.ip, this.portNo);
+                printWriter = new PrintWriter(contactSocket.getOutputStream(), true);
+                
+                recieve = new RecieveThread(contactSocket, parent);
+            }
+            catch(Exception e)
+            {
+                consoleMessage("Contact failed " + e.getMessage());
+            }
+        }
+    }
+    
+    ArrayList<Friend> friendsLoggedOn = new ArrayList();
+    
     /**
      * Creates new form MainWindow
      */
     public MainWindow() 
     {
         initComponents();
+        
     }
     //this is an infinite loop that tries to get connections - probably need to make this another thread
     @Override
@@ -39,9 +79,6 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
     {
         try
         {
-            //create the welcome socket
-            welcomeSocket = new ServerSocket(0);
-            
             boolean inloop = false;
             
             while (true)
@@ -73,22 +110,34 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
     
     public void login()
     {
-        
         try
         {
+            //create the welcome socket
+            welcomeSocket = new ServerSocket(0);
+        }
+        catch(Exception e)
+        {
+            consoleMessage("Server setup failed " + e.getMessage());
+        }
+        try
+        {
+            
+            
+            
             clientSocket = new Socket(serverIp, port);
             RecieveThread st =  new RecieveThread(clientSocket, this);
             
             try
             {
+
                 outToServer = new PrintWriter(clientSocket.getOutputStream(), true);
                 //System.out.println("Alice");
                 //System.out.println(clientSocket.getLocalAddress().getHostName());
-                
-                String generateMasterKey = generateMasterKey();
-                
+
+                String generatedSharedKey = generateSharedKey();
+                String generatedKeyPair = generateKeyPair();
                 //System.out.println(ssThread.welcomeSocket.getLocalPort() + " /");
-                outToServer.println("/UserName " + userName + " " +clientSocket.getLocalAddress().getHostAddress() +" "+ welcomeSocket.getLocalPort() + " " + generateMasterKey);
+                outToServer.println("/UserName " + userName + " " +clientSocket.getLocalAddress().getHostAddress() +" "+ welcomeSocket.getLocalPort() + " " + generatedSharedKey +" "+generatedKeyPair);
                 //outToServer.println("/UserName " + "Alice" + " " +clientSocket.getLocalAddress().getHostAddress() +" "+ ssThread.welcomeSocket.getLocalPort());
     //            sleeper.t.start();
     //            outToServer.println("/UserName " + userName + " " +clientSocket.getLocalAddress().getHostAddress() +" "+ ssThread.welcomeSocket.getLocalPort());
@@ -109,7 +158,11 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
         }
         
     }
-    public String generateMasterKey()
+    public String generateSharedKey()
+    {
+        return "password";
+    }
+    public String generateKeyPair()
     {
         return "password";
     }
@@ -128,7 +181,18 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
             consoleMessage("Not connected to server");
         }
     }
-    
+    public void friendMessage(String text, Friend friend)
+    {
+              
+        if(friend.printWriter!=null)
+        {
+            friend.printWriter.println("/Message " + userName + " " + text);
+        }
+        else
+        {
+            consoleMessage("Not connected to friend");
+        }
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -143,6 +207,12 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
         jTextArea1 = new javax.swing.JTextArea();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTextArea2 = new javax.swing.JTextArea();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        jList1 = new javax.swing.JList();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        jCheckBox1 = new javax.swing.JCheckBox();
+        jButton1 = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
@@ -174,6 +244,31 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
         jScrollPane2.setViewportView(jTextArea2);
         jTextArea2.getAccessibleContext().setAccessibleName("Input");
 
+        jList1.addListSelectionListener(new javax.swing.event.ListSelectionListener() {
+            public void valueChanged(javax.swing.event.ListSelectionEvent evt) {
+                jList1ValueChanged(evt);
+            }
+        });
+        jScrollPane3.setViewportView(jList1);
+
+        jLabel1.setText("Contact List:");
+
+        jLabel2.setText("Chat Window:");
+
+        jCheckBox1.setText("Show Encrypted");
+        jCheckBox1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBox1ActionPerformed(evt);
+            }
+        });
+
+        jButton1.setText("Update Contacts");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
+
         jMenu1.setText("File");
 
         jMenuItem1.setText("Log into Server");
@@ -195,15 +290,42 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
-            .addComponent(jScrollPane2)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel1)
+                            .addComponent(jCheckBox1)
+                            .addComponent(jButton1))
+                        .addGap(0, 104, Short.MAX_VALUE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 348, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jLabel2)
+                        .addContainerGap())
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING)))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 213, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel1)
+                    .addComponent(jLabel2))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 224, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 224, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 57, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jCheckBox1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButton1)
+                        .addGap(0, 26, Short.MAX_VALUE))))
         );
 
         pack();
@@ -223,11 +345,38 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
             jTextArea1.append(userName+": " + input + "\n");
             try
             {
-                serverMessage(input);
+                int i = jList1.getSelectedIndex();
+                ListModel md = jList1.getModel();
+                
+                String s = md.getElementAt(i).toString();
+                //consoleMessage(s);
+                boolean sent = false;
+                if(s!=null)
+                    for (Friend temp : friendsLoggedOn) 
+                    {
+                        if (s.equals("Server")) 
+                        {
+                            serverMessage(input);
+                            sent = true;
+                            break;
+                        }
+                        else if (temp.userName.equals(s)) 
+                        {
+                            friendMessage(input, temp);
+                            //new ChatWindow(temp.contactName, temp.ipAdress, temp.port, userName, this);
+                            sent = true;
+                            break;
+                        }
+                    }
+                if(!sent)
+                {
+                    serverMessage(input);
+                }
+                
             }
             catch(Exception e)
             {
-                jTextArea1.append("Couldn't connect to server message not sent.\n");
+                jTextArea1.append("Couldn't send your message, try selecting someone to talk to.\n");
             }
             jTextArea2.setText("");
         }
@@ -238,6 +387,87 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
         Login s = new Login(this);
         
     }//GEN-LAST:event_jMenuItem1ActionPerformed
+
+    private void jList1ValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_jList1ValueChanged
+
+        int minIndex = evt.getFirstIndex();
+        int maxIndex = evt.getLastIndex();
+
+        if (evt.getValueIsAdjusting()) {
+//            int i = jList1.getSelectedIndex();
+//            ListModel md = jList1.getModel();
+//            String s = md.getElementAt(i).toString();
+//            for (Friend temp : friendsLoggedOn) {
+//                if (temp.userName.equals(s)) {
+//                    //new ChatWindow(temp.contactName, temp.ipAdress, temp.port, userName, this);
+//                    break;
+//                }
+//            }
+
+        }
+//        for (int i = minIndex; i <= maxIndex; i++)
+//        {
+//
+//        }
+//        System.out.println(minIndex+" "+maxIndex);
+    }//GEN-LAST:event_jList1ValueChanged
+
+    private void jCheckBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jCheckBox1ActionPerformed
+     public void updateList(String friendList)
+    {
+        StringTokenizer st = new StringTokenizer(friendList);
+        //System.out.println(friendList);
+        st.nextToken();
+        String name = "";
+        String ipAddress = "";
+        int portNumber = 0;
+        String sharedKey = "";
+        String publicKey = "";
+        
+        DefaultListModel listModel;
+        listModel = new DefaultListModel();
+        listModel.addElement("Server");
+        
+        Friend test;
+        while(st.hasMoreTokens())
+        {
+            name = st.nextToken();
+            ipAddress = st.nextToken();
+            portNumber = Integer.parseInt(st.nextToken());
+            sharedKey = st.nextToken();
+            publicKey = st.nextToken();
+            consoleMessage(name+" "+ipAddress+" "+portNumber+" "+sharedKey+" "+publicKey);
+            
+            
+            test = new Friend(name, ipAddress, portNumber,sharedKey,publicKey , this);
+            
+            friendsLoggedOn.add(test);
+            listModel.addElement(name);
+            
+        }
+        jList1.setModel(listModel);// = new JList(listModel);
+    }
+    public void sendListRequest() throws Exception
+    {
+//        System.out.println("-"+userName+ "-");
+//        if(!userName.equals("")&&userName!=null)
+            outToServer.println("/ListUpdate " + userName);
+    }
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        // TODO add your handling code here:
+        try
+        {
+            sendListRequest();
+        }
+        catch(Exception e)
+        {
+            System.out.println("Sending list error");
+        }
+        
+        
+    }//GEN-LAST:event_jButton1ActionPerformed
 
     
     
@@ -283,6 +513,11 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
         });
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButton1;
+    private javax.swing.JCheckBox jCheckBox1;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JList jList1;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuBar jMenuBar1;
@@ -290,6 +525,7 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
     private javax.swing.JPopupMenu jPopupMenu1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JTextArea jTextArea1;
     private javax.swing.JTextArea jTextArea2;
     // End of variables declaration//GEN-END:variables

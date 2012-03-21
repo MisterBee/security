@@ -60,8 +60,14 @@ public class RecieveThread implements Runnable
                     System.out.println(test);
                     if(test.equals("/FriendsList"))
                     {
-                        //parentRef.updateList(modifiedSentence);
+                        parentRef.updateList(modifiedSentence);
 //                        System.out.println(modifiedSentence);
+                    }
+                    else if(test.equals("/Message"))
+                    {
+                        String friend = st.nextToken();
+                        String leftOverMessage = modifiedSentence.substring(8 + friend.length() + 1);
+                        parentRef.consoleMessage(friend +": " +leftOverMessage);
                     }
                     else if(test.equals("/ReturnSocket"))
                     {

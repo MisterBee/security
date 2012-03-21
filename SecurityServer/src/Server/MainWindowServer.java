@@ -22,16 +22,18 @@ public class MainWindowServer extends javax.swing.JFrame implements Runnable
     
     public class User
     {
-        String name;
+        String userName;
         String ip;
         int portNo;
-        String key;
-        User(String userName, String userIp, int userPortNo,String masterKey)
+        String sharedKey;
+        String publicKey;
+        User(String userName, String userIp, int userPortNo, String sharedKey, String publicKey)
         {
-            name = userName;
+            this.userName = userName;
             ip = userIp;
             portNo = userPortNo;
-            key = masterKey;
+            this.sharedKey = sharedKey;
+            this.publicKey = publicKey;
         }
     }
     
@@ -51,6 +53,8 @@ public class MainWindowServer extends javax.swing.JFrame implements Runnable
     {
         jTextArea1.append( input + "\n");
     }
+    
+    
     //this is an infinite loop that tries to get connections - probably need to make this another thread
     @Override
     public void run()

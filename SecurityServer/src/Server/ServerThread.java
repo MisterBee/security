@@ -57,9 +57,36 @@ public class ServerThread implements Runnable
                         uname = st.nextToken();
                         String ip = st.nextToken();
                         int port = Integer.parseInt(st.nextToken());
-                        String masterKey = st.nextToken();
-                        mainWindow.consoleMessage("Welcome "+uname +" at " +ip+" with open port "+ port+" shhhh... "+ masterKey+" :)");
-                        mainWindow.usersLoggedOn.add(mainWindow.new User(uname,ip,port, masterKey));
+                        String sharedKey = st.nextToken();
+                        String publicKey = st.nextToken();
+                        mainWindow.consoleMessage("Welcome "+uname +" at " +ip+" with open port "+ port+" shhhh... "+ sharedKey+" - "+publicKey+" :)");
+                        mainWindow.usersLoggedOn.add(mainWindow.new User(uname,ip,port, sharedKey, publicKey));
+                        
+                        
+                        outToClient.println("/Message " + "Server " + "Thanks for logging in "+uname +"!");
+                        
+                        String temp = "";
+                        for(MainWindowServer.User friend : mainWindow.usersLoggedOn)
+                        {
+                            if(!friend.userName.equals(uname))
+                                temp = temp + " " + friend.userName + " " + friend.ip + " " + friend.portNo +" "+ friend.publicKey+" "+ friend.sharedKey;
+                        }
+                                
+                        outToClient.println("/FriendsList" + temp);
+                        mainWindow.consoleMessage("Sent list update to " + uname);
+                    }
+                    else if(command.equals("/ListUpdate"))
+                    {
+                        String temp = "";
+                        String userName = st.nextToken();
+                        for(MainWindowServer.User friend : mainWindow.usersLoggedOn)
+                        {
+                            if(!friend.userName.equals(userName))
+                            temp = temp + " " + friend.userName + " " + friend.ip + " " + friend.portNo +" "+ friend.publicKey+" "+ friend.sharedKey;
+                        }
+                                
+                        outToClient.println("/FriendsList" + temp);
+                        mainWindow.consoleMessage("Sent list update to " + userName);
                     }
                     else if (command.equals("/Logout"))
                     {
@@ -76,13 +103,20 @@ public class ServerThread implements Runnable
                             mainWindow.consoleMessage(uname+": " + clientSentence);
                         }
                         //System.out.println("Received: " + clientSentence);
-                        capitalizedSentence = clientSentence.toUpperCase() + '\n';
-                        outToClient.println(capitalizedSentence);
+                        capitalizedSentence = clientSentence.toUpperCase();
+                        outToClient.println("/Message " + "Server " + capitalizedSentence);
                     }
                 }
                 catch(Exception e)
                 {
                     System.out.println("Server thread error" + e.getMessage());
+                    for(MainWindowServer.User friend : mainWindow.usersLoggedOn)
+                    {
+                        if(!friend.userName.equals(uname))
+                        {
+                            mainWindow.usersLoggedOn.remove(friend);
+                        }
+                    }
                     break;
                 }
             }            
