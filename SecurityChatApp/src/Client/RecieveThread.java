@@ -115,11 +115,12 @@ public class RecieveThread implements Runnable
                             parentRef.consoleMessage("Start of Phase3 creation");
                             
                             String nonceB = parentRef.generateNonce();
-                            String toEncrypt = bCipherText +" "+ nonceB;
+                            String toEncrypt = nonceB + " " + bCipherText;
                             
                             PrivateKey KRA = parentRef.keyPair.getPrivate();
-                            String phase3 = "/Phase3 "+ parentRef.userName + " "+ parentRef.encrypt(toEncrypt, KRA);
-                            
+                            System.out.println("it works");
+                            String phase3 = "/Phase3 "+ parentRef.userName + " "+ parentRef.publicEncrypt(toEncrypt, KRA);
+                            System.out.println("but not here" + phase3);
                             b.printWriter.println(phase3);
                             parentRef.consoleMessage("Phase3 sent to " + b.userName);
                             
@@ -133,9 +134,42 @@ public class RecieveThread implements Runnable
                     }
                     else if(test.equals("/Phase3"))
                     {
-                        parentRef.consoleMessage("Recieved phase3 from A");
+                        // get the name of the sender
+                        String friend = st.nextToken();
+                        // debug statement
+                        parentRef.consoleMessage("Recieved phase3 from " + friend);
+                        // extract the "signed" string from the message
+                        String phase3Encrypted = modifiedSentence.substring(8 + friend.length()+ 1);
                         
-                        String phase3Encrypted = modifiedSentence.substring(8);
+                        MainWindow.Friend b = null;
+                        for (MainWindow.Friend temp : parentRef.friendsLoggedOn) 
+                        {
+                            if (temp.userName.equals(friend)) 
+                            {
+                                b = temp;
+                                break;
+                            }
+                        }
+                        
+                        
+                        // test "signature", by decrypting
+                        String myCipherTextWithNonceB = parentRef.publicDecrypt(phase3Encrypted, b.publicKey);
+                        // extract and store nonceB
+                        StringTokenizer st2 = new StringTokenizer(myCipherTextWithNonceB);
+                        String thisNonce = st2.nextToken();
+                        //remove nonceB from the string.
+                        String myCipherText = modifiedSentence.substring(thisNonce.length());
+                        
+                        String myDecryptedText = parentRef.decrypt(myCipherText);
+                        StringTokenizer st3 = new StringTokenizer(myDecryptedText);
+                        String friendName = st3.nextToken();
+                        if(friendName.equals(friend))
+                        {
+                           String KABstr = modifiedSentence.substring(thisNonce.length() +1);
+                        }
+                        else  parentRef.consoleMessage("Look out...info Ninjas are about!");
+                        
+                        
                         
                     }
                     else if(test.equals("/Message"))
@@ -179,6 +213,7 @@ public class RecieveThread implements Runnable
         catch(Exception e)
         {
             System.out.println("Recieved thread failed " + e.getMessage());
+                    e.printStackTrace();
         }
     
     }

@@ -583,34 +583,53 @@ public class MainWindow extends javax.swing.JFrame implements Runnable
         
         return s;
     }
+    
+        public String encrypt(String toEncrypt, Key master) throws Exception
+    {
+        byte[] plainText = toEncrypt.getBytes(); 
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.ENCRYPT_MODE, masterKey);
+        byte[] cipherText = cipher.doFinal(plainText);
+        String s = DatatypeConverter.printBase64Binary(cipherText);
+        
+        return s;
+    }
     public String decrypt(String toDecrypt)throws Exception
     {
         byte[] plainText = DatatypeConverter.parseBase64Binary(toDecrypt);
         Cipher cipher = Cipher.getInstance("AES");//CBC/PKCS5Padding");
 //        byte[] iv = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 //        IvParameterSpec ivspec = new IvParameterSpec(iv);
+        System.out.println();
         cipher.init(Cipher.DECRYPT_MODE, masterKey);//, ivspec);
         byte[] cipherText = cipher.doFinal(plainText);
         String s = new String(cipherText);
         return s;
     }
     
-    public String encrypt(String toEncrypt, PrivateKey KRA) throws Exception
+    public String publicEncrypt(String toEncrypt, PrivateKey KRA) throws Exception
     {
-        byte[] plainText = DatatypeConverter.parseBase64Binary(toEncrypt);
+        byte[] plainText = toEncrypt.getBytes(); 
         Cipher cipher = Cipher.getInstance("RSA");
-        
-//        byte[] iv = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-//        IvParameterSpec ivspec = new IvParameterSpec(iv);
-        
         cipher.init(Cipher.ENCRYPT_MODE, KRA);
-        
-        
         byte[] cipherText = cipher.doFinal(plainText);
         String s = DatatypeConverter.printBase64Binary(cipherText);
         
         return s;
     }
+    
+    public String publicDecrypt(String toDecrypt, PublicKey KRA) throws Exception
+    {
+        byte[] plainText = DatatypeConverter.parseBase64Binary(toDecrypt);
+        Cipher cipher = Cipher.getInstance("RSA");//CBC/PKCS5Padding");
+//        byte[] iv = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+//        IvParameterSpec ivspec = new IvParameterSpec(iv);
+        cipher.init(Cipher.DECRYPT_MODE, KRA);//, ivspec);
+        byte[] cipherText = cipher.doFinal(plainText);
+        String s = new String(cipherText);
+        return s;
+    }
+            
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         // TODO add your handling code here:
         try

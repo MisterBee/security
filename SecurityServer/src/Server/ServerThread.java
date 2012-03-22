@@ -157,7 +157,8 @@ public class ServerThread implements Runnable
                         
                         String bEncrypt = uname + " " + sharedKeyString;
                         String bEncrypted = mainWindow.encrypt(bEncrypt, b.sharedKey);
-                        mainWindow.consoleMessage("Phase2 nonce " + nonce);
+                        //trying something
+                        
                         String phase2 = nonce + " " + sharedKeyString +" "+ friendName + " " + bEncrypted;
                         
                         String phase2Encrypted = mainWindow.encrypt(phase2, aKey);
